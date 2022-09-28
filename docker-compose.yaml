@@ -1,0 +1,36 @@
+version: "2.1"
+services:
+  postgres:
+    container_name: synthesia_postgres
+    image: postgres:12.9
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgresdata:/data/postgres
+      - postgresdbdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=synthesia
+      - POSTGRES_PASSWORD=synthesia
+      - POSTGRES_DB=synthesia
+    networks:
+      - postgres
+
+  redis:
+    container_name: synthesia_redis
+    image: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+
+volumes:
+  postgresdata:
+    driver: local
+  postgresdbdata:
+    driver: local
+  redisdata:
+    driver: local
+
+networks:
+  postgres:
+    driver: bridge
