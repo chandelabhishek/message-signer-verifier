@@ -1,18 +1,12 @@
-require("dotenv").config();
+const dotenv = require("dotenv");
+const dotenvExpand = require("dotenv-expand");
+
+const myEnv = dotenv.config();
+dotenvExpand.expand(myEnv);
+
 const pino = require("pino");
 
-const { DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, SERVER_PORT } =
-  process.env;
-const knex = require("knex")({
-  client: "pg",
-  connection: {
-    host: DB_HOST,
-    port: DB_PORT,
-    user: DB_USER,
-    password: DB_PASSWORD,
-    database: DB_NAME,
-  },
-});
+const { SERVER_PORT } = process.env;
 const fastify = require("fastify")({
   logger: pino,
 });
@@ -24,7 +18,7 @@ const pluginRegistrar = require("./plugin-regitrar");
  */
 const start = async () => {
   try {
-    routeRegistrar(fastify, knex);
+    routeRegistrar(fastify);
     await pluginRegistrar(fastify);
     await fastify.listen({ port: SERVER_PORT });
   } catch (err) {

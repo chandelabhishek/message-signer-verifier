@@ -1,4 +1,8 @@
-require("dotenv").config();
+const dotenv = require("dotenv");
+const dotenvExpand = require("dotenv-expand");
+
+const myEnv = dotenv.config();
+dotenvExpand.expand(myEnv);
 const { Worker } = require("bullmq");
 
 const { DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT } = process.env;
@@ -12,14 +16,12 @@ const knex = require("knex")({
     database: DB_NAME,
   },
 });
-
+const webhookPublisher = require("./webhook-publisher");
 const { connection } = require("./config");
-const { QUEUE_NAME } = require("../constant");
+const { JOB_QUEUE_NAME } = require("../constant");
 const getCallerService = require("../service/sign-verify-caller");
-const getApiCallLogRepository = require("../repository/api-call-log");
 
-const apiCallLogRepository = getApiCallLogRepository(knex);
-const apiCallerService = getCallerService(apiCallLogRepository);
+const apiCallerService = getCallerService(knex);
 
 async function callSignApi(job) {
   const { payload } = job.data;
@@ -30,9 +32,11 @@ async function callSignApi(job) {
     status,
     data,
   });
+
+  await webhookPublisher.publish({ ...payload, apiResponse: data });
 }
 
-const worker = new Worker(QUEUE_NAME, callSignApi, { connection });
+const worker = new Worker(JOB_QUEUE_NAME, callSignApi, { connection });
 
 worker.on("completed", (job) => {
   console.info(`${job.id} has completed!`);

@@ -1,0 +1,36 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["interactiveTransactions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model ApiCallLog {
+  id                            String            @id @default(uuid())
+  requestMessage                String        
+  webhookUrl                    String?
+  response                      String?         
+  clientRequestId               String?
+  requestStatus                 String?
+  retryScheduled                Boolean           @default(false)
+  createdAt                     DateTime          @default(now())
+  updatedAt                     DateTime          @default(now())
+  webhookCallLog                WebhookCallLog[]
+  @@index([requestMessage])
+}
+ 
+model WebhookCallLog {
+  id                            String             @id @default(uuid())
+  lastCallResponse              String?
+  lastCallResponseStatus        Int?
+  lastCalledAt                  DateTime
+  apiCallLogId                  String             
+  apiCallLogs                   ApiCallLog?        @relation(fields: [apiCallLogId], references: id)
+}

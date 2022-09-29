@@ -1,7 +1,7 @@
 const getController = require("./controller");
 
-async function registerRoutes(fastify, knex) {
-  const { signController, verifyController } = await getController(knex);
+async function registerRoutes(fastify) {
+  const { signController, verifyController } = getController();
   fastify.post("/sign", signController);
   fastify.get("/verify", verifyController);
 }
