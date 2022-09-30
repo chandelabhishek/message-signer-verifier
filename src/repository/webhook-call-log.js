@@ -1,8 +1,15 @@
-const { isEmpty, first } = require("lodash");
+const { PrismaClient } = require("@prisma/client");
 
-module.exports = function getWebhookCallLogRepository(knex) {
-  async function addWebhookCallLog(callLogObject) {
-    return knex("webhhook_call_log").insert({});
+const prisma = new PrismaClient();
+
+module.exports = function getWebhookCallLogRepository() {
+  function addWebhookCallLog({ apiCallLogId, lastCallResponse }) {
+    return prisma.webhookCallLog.create({
+      data: {
+        apiCallLogId,
+        lastCallResponse,
+      },
+    });
   }
 
   return { addWebhookCallLog };

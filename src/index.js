@@ -27,3 +27,13 @@ const start = async () => {
   }
 };
 start();
+
+function cleanupResorces() {
+  fastify.close();
+  process.emit("cleanup");
+}
+
+process.stdin.resume();
+process.on("exit", () => cleanupResorces());
+process.on("SIGINT", () => cleanupResorces());
+process.on("uncaughtException", () => cleanupResorces());

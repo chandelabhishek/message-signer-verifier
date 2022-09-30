@@ -9,9 +9,10 @@ const axiosInstance = axios.create({
   },
 });
 
-function makeGetApiCall(url, params) {
+function makeGetApiCall(url, params, options = {}) {
   return axiosInstance.get(url, {
     params,
+    ...options,
   });
 }
 

@@ -8,14 +8,18 @@ const axios = require("axios").default;
 const { connection } = require("./config");
 const { WEBHOOK_QUEUE_NAME } = require("../constant");
 
-// const getCallerService = require("../service/sign-verify-caller");
-
-// const apiCallerService = getCallerService();
+const WebhookResponseUpdaterService =
+  require("../service/update-webhook-status")();
 
 async function callWebhook(job) {
   const { payload } = job.data;
-  await axios(payload.webhookUrl, {
+  const { data, status } = await axios(payload.webhookUrl, {
     headers: payload.webhookHeaders,
+  });
+  await WebhookResponseUpdaterService.updateWebhookResponse({
+    apiCallLogId: payload.callLogId,
+    lastCallResponse: data,
+    lastCallResponseStatus: status,
   });
 }
 

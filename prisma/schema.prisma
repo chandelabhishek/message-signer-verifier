@@ -18,7 +18,7 @@ model ApiCallLog {
   webhookUrl                    String?
   response                      String?         
   clientRequestId               String?
-  requestStatus                 String?
+  requestStatus                 Int?
   retryScheduled                Boolean           @default(false)
   createdAt                     DateTime          @default(now())
   updatedAt                     DateTime          @default(now())
@@ -30,7 +30,7 @@ model WebhookCallLog {
   id                            String             @id @default(uuid())
   lastCallResponse              String?
   lastCallResponseStatus        Int?
-  lastCalledAt                  DateTime
+  lastCalledAt                  DateTime           @default(now())
   apiCallLogId                  String             
   apiCallLogs                   ApiCallLog?        @relation(fields: [apiCallLogId], references: id)
 }

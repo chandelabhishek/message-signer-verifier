@@ -2,10 +2,10 @@
 CREATE TABLE "ApiCallLog" (
     "id" TEXT NOT NULL,
     "requestMessage" TEXT NOT NULL,
-    "webhookUrl" TEXT NOT NULL,
-    "response" TEXT NOT NULL,
-    "clientRequestId" TEXT NOT NULL,
-    "requestStatus" TEXT NOT NULL,
+    "webhookUrl" TEXT,
+    "response" TEXT,
+    "clientRequestId" TEXT,
+    "requestStatus" INTEGER,
     "retryScheduled" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -16,8 +16,8 @@ CREATE TABLE "ApiCallLog" (
 -- CreateTable
 CREATE TABLE "WebhookCallLog" (
     "id" TEXT NOT NULL,
-    "lastCallResponse" TEXT NOT NULL,
-    "lastCallResponseStatus" INTEGER NOT NULL,
+    "lastCallResponse" TEXT,
+    "lastCallResponseStatus" INTEGER,
     "lastCalledAt" TIMESTAMP(3) NOT NULL,
     "apiCallLogId" TEXT NOT NULL,
 
