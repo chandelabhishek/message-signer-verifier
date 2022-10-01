@@ -1,6 +1,7 @@
 /* eslint-disable camelcase */
-const { SIGN_URL, VERIFY_URL, RETRY_ERROR_CODES } = process.env;
+const { SIGN_URL, RETRY_ERROR_CODES } = process.env;
 const { StatusCodes } = require("http-status-codes");
+const logger = require("pino")();
 const makeGetApiCall = require("./api-caller");
 const bullMQJobScheduler = require("../job-scheduler/job-scheduler");
 const getApiCallLogRepository = require("../repository/api-call-log");
@@ -34,6 +35,7 @@ function signCaller(apiCallLogRepository, jobScheduler, rateLimiterService) {
   async function scheduleRetry(callLogId, payload) {
     await apiCallLogRepository.updateCallLogById(callLogId, {
       retryScheduled: true,
+      updatedAt: new Date(),
     });
 
     await jobScheduler.schedule({
@@ -69,6 +71,7 @@ function signCaller(apiCallLogRepository, jobScheduler, rateLimiterService) {
     const canNotBeCalled = await rateLimiterService.isOverTheLimit();
 
     if (canNotBeCalled) {
+      logger.info("Allowed api call limit reached, adding it to the queue");
       return ACCEPTED;
     }
 
@@ -86,21 +89,29 @@ function signCaller(apiCallLogRepository, jobScheduler, rateLimiterService) {
   async function returnAccptedAndSchedulRetry(id, payload, reply) {
     reply.status(StatusCodes.ACCEPTED);
     await scheduleRetry(id, payload);
+    return ACCEPTED;
   }
 
   /**
    *
-   * @param {*} reply reply object from fastify
+   * @param {*} reply reply object from pino
    * @param {*} payload request body
    * @returns response
    */
   // eslint-disable-next-line consistent-return
   async function callSign(reply, payload) {
+    logger.info("received payload");
     const { requestStatus, id, response, retryScheduled } =
       await apiCallLogRepository.getOrCreateCallLog(payload);
 
     // check if this message has already been signed then return the cached response
     if (requestStatus === StatusCodes.OK) {
+      logger.info(
+        {
+          message: payload.message,
+        },
+        `  was already signed returning cached response`
+      );
       return response;
     }
 
@@ -112,6 +123,12 @@ function signCaller(apiCallLogRepository, jobScheduler, rateLimiterService) {
      * this is done after observing that syntheisa sign api continuously fails for the same message
      */
     if (retryScheduled) {
+      logger.info(
+        {
+          message: payload.message,
+        },
+        `message: ${payload.message} is already scheduled`
+      );
       reply.status(StatusCodes.ACCEPTED);
       return ACCEPTED;
     }
@@ -122,24 +139,32 @@ function signCaller(apiCallLogRepository, jobScheduler, rateLimiterService) {
         return returnAccptedAndSchedulRetry(id, payload, reply);
       }
 
-      await handleSignSuccessResponse(id);
+      await handleSignSuccessResponse(id)(resp);
       return resp.data;
     } catch (error) {
+      logger.info(
+        `request with payload: ${JSON.stringify(
+          payload,
+          null,
+          2
+        )} failed with error: ${JSON.stringify(error, null, 2)}`
+      );
       if (
         error.code === "ECONNABORTED" || // this is to handle axios timeouts
         retryErrorCodes.includes(error.response?.status) // check if the error is retriable
       ) {
+        logger.info(`adding request with id: ${id} to queue to process later`);
         return returnAccptedAndSchedulRetry(id, payload, reply);
       }
       return error;
     }
   }
 
-  function callVerify() {
-    return makeGetApiCall(VERIFY_URL);
-  }
+  // function callVerify() {
+  //   return makeGetApiCall(VERIFY_URL);
+  // }
 
-  return { callSign, callVerify, makeSignCall, handleSignSuccessResponse };
+  return { callSign, makeSignCall, handleSignSuccessResponse };
 }
 
 /**

@@ -9,6 +9,10 @@ const {
   REDIS_WEBHOOK_EVENT_BACKOFF_DELAY,
 } = process.env;
 
+function generateRandomInteger(min, max) {
+  return Math.floor(min + Math.random() * (max - min + 1));
+}
+
 const jobQueueRetryConfig = {
   attempts: parseInt(REDIS_JOB_BACKOFF_ATTEMPTS, 10),
   backoff: {
@@ -31,7 +35,8 @@ module.exports = {
     port: REDIS_PORT,
   },
   jobQueueConfig: {
-    delay: parseInt(REDIS_JOB_INITIAL_DELAY, 10),
+    // generating random initial delay so that all the queued don't get retried at the same time
+    delay: generateRandomInteger(1, 10) * parseInt(REDIS_JOB_INITIAL_DELAY, 10),
     ...jobQueueRetryConfig,
   },
   webhookEventConfig: {

@@ -11,6 +11,10 @@ const maxRequests = parseInt(RATE_LIMITER_MAX_ALLOWED_REQUESTS, 10);
 const redis = createClient({ url: REDIS_URL });
 let isConnected = false;
 
+/**
+ *
+ * @returns boolean -- true/false based on if synthesia sign api can be called
+ */
 async function isOverTheLimit() {
   const currentTime = await redis.time();
   // eslint-disable-next-line no-unused-vars
@@ -26,6 +30,9 @@ async function isOverTheLimit() {
   return false;
 }
 
+/**
+ * Increases the count of the request in the given window
+ */
 async function addRequestToRateLimitWndow() {
   const currentTime = await redis.time();
   await redis.zAdd(key, {

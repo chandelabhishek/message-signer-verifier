@@ -6,17 +6,18 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/index",
-    "migration:create": "knex migrate:make",
-    "migration:run": "knex migrate:latest",
-    "sign-job-scheduler": "node src/job-scheduler/job-worker.js",
-    "webhook-worker": "node src/job-scheduler/webhook-worker.js"
+    "webserver": "node src/index",
+    "migrate": "prisma generate && prisma migrate deploy",
+    "sign-job-worker": "prisma generate && node src/job-scheduler/job-worker.js",
+    "webhook-worker": "prisma generate && node src/job-scheduler/webhook-worker.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Abhishek Chandel",
   "license": "ISC",
   "dependencies": {
     "@fastify/cors": "^8.1.0",
     "@fastify/helmet": "^10.0.0",
+    "@fastify/swagger": "^7.6.1",
     "@prisma/client": "^4.4.0",
     "axios": "^0.27.2",
     "bullmq": "^2.1.1",

@@ -4,6 +4,7 @@
 
 const dotenv = require("dotenv");
 const dotenvExpand = require("dotenv-expand");
+const logger = require("pino")();
 
 const myEnv = dotenv.config();
 dotenvExpand.expand(myEnv);
@@ -27,38 +28,47 @@ async function callSignApi(job) {
   const { payload } = job.data;
 
   // call syhthesia api, set longer timeouts because it need not return response in 2sec
-  const { status, data } = await apiCallerService.makeSignCall(payload, {
+  const response = await apiCallerService.makeSignCall(payload, {
     timeout: 30000,
   });
 
-  const response = await apiCallerService.handleSignSuccessResponse(
-    payload.callLogId
-  )({
-    status,
-    data,
-  });
-
-  // if the call was rate limited fail the job, so it cab be retried
+  // if the call was rate limited fail the job, so it cab be `retried`
   if (response === ACCEPTED) {
     throw new Error("This call has been rate limited");
   }
 
+  await apiCallerService.handleSignSuccessResponse(payload.callLogId)({
+    status: response.status,
+    data: response.data,
+  });
+
   // publish an event so that webhook worker can the webhooks to send sign messages
-  await webhookPublisher.publish({ ...payload, apiResponse: data });
+  logger.info("publishing: ", {
+    ...payload,
+    apiResponse: response.data,
+  });
+  if (!payload.webhookUrl) return;
+
+  await webhookPublisher.publish({
+    ...payload,
+    apiResponse: response.data,
+  });
 }
 
 const worker = new Worker(JOB_QUEUE_NAME, callSignApi, { connection });
 
 worker.on("completed", (job) => {
-  console.info(`${job.id} has completed!`);
+  logger.info(`${job.id} has completed!`);
 });
 
 worker.on("failed", (job, err) => {
-  console.error(`${job.id} has failed with ${err.message}`);
+  logger.error(`${job.id} has failed with ${err.message}`);
 });
 
 worker.on("error", (err) => {
   // log the error
-  console.error(err);
+  logger.error(err);
 });
-console.log("Worker Started ===>>>>");
+logger.info(
+  "==============================================   JOB-WORKER  STARTED!!!!  ================================================="
+);

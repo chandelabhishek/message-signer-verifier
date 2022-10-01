@@ -6,21 +6,23 @@ dotenvExpand.expand(myEnv);
 
 const pino = require("pino");
 
-const { SERVER_PORT } = process.env;
+const { SERVER_PORT, SERVER_HOST } = process.env;
 const fastify = require("fastify")({
   logger: pino,
 });
 const routeRegistrar = require("./route-registrar");
 const pluginRegistrar = require("./plugin-regitrar");
-
+const hookRegistrar = require("./hook-registrar");
+const handleShutdownsGracefully = require("./shutdown");
 /**
  * Run the server!
  */
 const start = async () => {
   try {
-    routeRegistrar(fastify);
     await pluginRegistrar(fastify);
-    await fastify.listen({ port: SERVER_PORT });
+    routeRegistrar(fastify);
+    hookRegistrar(fastify);
+    await fastify.listen({ port: SERVER_PORT, host: SERVER_HOST });
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
@@ -28,12 +30,4 @@ const start = async () => {
 };
 start();
 
-function cleanupResorces() {
-  fastify.close();
-  process.emit("cleanup");
-}
-
-process.stdin.resume();
-process.on("exit", () => cleanupResorces());
-process.on("SIGINT", () => cleanupResorces());
-process.on("uncaughtException", () => cleanupResorces());
+handleShutdownsGracefully(fastify);
