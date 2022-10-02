@@ -2,8 +2,10 @@ const cors = require("@fastify/cors");
 const helmet = require("@fastify/helmet");
 const metricsPlugin = require("fastify-metrics");
 const swaggerPlugin = require("@fastify/swagger");
+const routeNotFoundHandler = require("../exception/rout-not-found-handler");
 
 async function pluginRegistrar(fastify) {
+  fastify.setNotFoundHandler(routeNotFoundHandler());
   await fastify.register(swaggerPlugin, {
     routePrefix: "/swagger",
     swagger: {

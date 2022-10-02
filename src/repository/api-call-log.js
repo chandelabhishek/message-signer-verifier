@@ -11,7 +11,6 @@ const prisma = new PrismaClient();
  */
 module.exports = function getApiCallLogRepository(db = prisma) {
   /**
-   *
    * @param {*} callLogObject received from client
    * @returns a call log object
    */
@@ -23,7 +22,7 @@ module.exports = function getApiCallLogRepository(db = prisma) {
         where: { requestMessage: callLogObject.message },
       });
 
-      // if message does not exist in the db create and return the created entry
+      // if message does not exist in the db
       if (isEmpty(entry)) {
         return trx.apiCallLog.create({
           data: {
@@ -34,17 +33,7 @@ module.exports = function getApiCallLogRepository(db = prisma) {
         });
       }
 
-      // if a different webhook url is passed with the same mesage, update the webhook url
-      if (entry.webhookUrl !== callLogObject.webhookUrl) {
-        return trx.apiCallLog.update({
-          data: {
-            webhookUrl: callLogObject.webhookUrl,
-            clientRequestId: callLogObject.clientRequestId,
-          },
-          where: { id: entry.id },
-        });
-      }
-
+      // return the existing record from the db
       return entry;
     });
   }

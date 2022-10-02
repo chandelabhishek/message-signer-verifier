@@ -1,3 +1,4 @@
+// write scope
 const { createClient } = require("redis");
 const { v4 } = require("uuid");
 

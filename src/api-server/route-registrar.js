@@ -1,4 +1,4 @@
-const getController = require("./controller");
+const getController = require("../controller");
 
 async function registerRoutes(fastify) {
   const { signController } = getController();

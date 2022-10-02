@@ -8,8 +8,8 @@
     "dev": "nodemon src/index",
     "webserver": "node src/index",
     "migrate": "prisma generate && prisma migrate deploy",
-    "sign-job-worker": "prisma generate && node src/job-scheduler/job-worker.js",
-    "webhook-worker": "prisma generate && node src/job-scheduler/webhook-worker.js"
+    "sign-job-worker": "prisma generate && node src/worker/job-worker.js",
+    "webhook-worker": "prisma generate && node src/worker/webhook-worker.js"
   },
   "keywords": [],
   "author": "Abhishek Chandel",

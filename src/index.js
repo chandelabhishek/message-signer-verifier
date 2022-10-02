@@ -1,33 +1,17 @@
-const dotenv = require("dotenv");
-const dotenvExpand = require("dotenv-expand");
-
-const myEnv = dotenv.config();
-dotenvExpand.expand(myEnv);
-
-const pino = require("pino");
+const setupServer = require("./api-server");
+const setupShutDownHandlers = require("./shutdown");
 
 const { SERVER_PORT, SERVER_HOST } = process.env;
-const fastify = require("fastify")({
-  logger: pino,
-});
-const routeRegistrar = require("./route-registrar");
-const pluginRegistrar = require("./plugin-regitrar");
-const hookRegistrar = require("./hook-registrar");
-const handleShutdownsGracefully = require("./shutdown");
-/**
- * Run the server!
- */
 const start = async () => {
   try {
-    await pluginRegistrar(fastify);
-    routeRegistrar(fastify);
-    hookRegistrar(fastify);
-    await fastify.listen({ port: SERVER_PORT, host: SERVER_HOST });
+    const server = await setupServer();
+    await server.start(SERVER_PORT, SERVER_HOST);
+    // setup handlers to shutdwn this process gracefully
+    setupShutDownHandlers(server);
   } catch (err) {
-    fastify.log.error(err);
+    // eslint-disable-next-line no-console
+    console.error(err);
     process.exit(1);
   }
 };
 start();
-
-handleShutdownsGracefully(fastify);

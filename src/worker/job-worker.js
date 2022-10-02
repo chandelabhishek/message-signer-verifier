@@ -4,16 +4,15 @@
 
 const dotenv = require("dotenv");
 const dotenvExpand = require("dotenv-expand");
-const logger = require("pino")();
+const logger = require("../logger");
 
 const myEnv = dotenv.config();
 dotenvExpand.expand(myEnv);
-const { Worker } = require("bullmq");
 
-const webhookPublisher = require("./webhook-publisher");
-const { connection } = require("./config");
+const webhookPublisher = require("../service/publisher/webhook-publisher");
 const { JOB_QUEUE_NAME } = require("../constant");
 const getCallerService = require("../service/sign-verify-caller");
+const registerWorker = require("./worker");
 
 const apiCallerService = getCallerService();
 const ACCEPTED = "ACCEPTED";
@@ -42,7 +41,7 @@ async function callSignApi(job) {
     data: response.data,
   });
 
-  // publish an event so that webhook worker can the webhooks to send sign messages
+  // publish an event so that webhook worker can call the webhooks to send signed messages
   logger.info("publishing: ", {
     ...payload,
     apiResponse: response.data,
@@ -55,20 +54,4 @@ async function callSignApi(job) {
   });
 }
 
-const worker = new Worker(JOB_QUEUE_NAME, callSignApi, { connection });
-
-worker.on("completed", (job) => {
-  logger.info(`${job.id} has completed!`);
-});
-
-worker.on("failed", (job, err) => {
-  logger.error(`${job.id} has failed with ${err.message}`);
-});
-
-worker.on("error", (err) => {
-  // log the error
-  logger.error(err);
-});
-logger.info(
-  "==============================================   JOB-WORKER  STARTED!!!!  ================================================="
-);
+registerWorker(JOB_QUEUE_NAME, callSignApi);

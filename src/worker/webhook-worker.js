@@ -3,12 +3,11 @@ const dotenvExpand = require("dotenv-expand");
 
 const myEnv = dotenv.config();
 dotenvExpand.expand(myEnv);
-const { Worker } = require("bullmq");
-const logger = require("pino")();
 
 const axios = require("axios").default;
-const { connection } = require("./config");
+const registerWorker = require("./worker");
 const { WEBHOOK_QUEUE_NAME } = require("../constant");
+const logger = require("../logger");
 
 const WebhookResponseUpdaterService =
   require("../service/update-webhook-status")();
@@ -44,20 +43,4 @@ async function callWebhook(job) {
   });
 }
 
-const worker = new Worker(WEBHOOK_QUEUE_NAME, callWebhook, { connection });
-
-worker.on("completed", (job) => {
-  logger.info(`${job.id} has completed!`);
-});
-
-worker.on("failed", (job, err) => {
-  logger.error(`${job.id} has failed with ${err.message}`);
-});
-
-worker.on("error", (err) => {
-  // log the error
-  logger.error(err);
-});
-logger.info(
-  "==============================================   WEBHOOK-WORKER  STARTED!!!!  ================================================="
-);
+registerWorker(WEBHOOK_QUEUE_NAME, callWebhook);

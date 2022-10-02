@@ -1,9 +1,9 @@
 /* eslint-disable camelcase */
 const { SIGN_URL, RETRY_ERROR_CODES } = process.env;
 const { StatusCodes } = require("http-status-codes");
-const logger = require("pino")();
+const logger = require("../logger");
 const makeGetApiCall = require("./api-caller");
-const bullMQJobScheduler = require("../job-scheduler/job-scheduler");
+const bullMQJobScheduler = require("./publisher/job-scheduler");
 const getApiCallLogRepository = require("../repository/api-call-log");
 
 const ACCEPTED = "ACCEPTED";
@@ -15,6 +15,7 @@ const retryErrorCodes = RETRY_ERROR_CODES.split(",").map((el) =>
   parseInt(el.trim(), 10)
 );
 const rateLimiter = require("./rate-limiter");
+const TimeoutError = require("../exception/timeout-error");
 
 /**
  *
@@ -38,7 +39,7 @@ function signCaller(apiCallLogRepository, jobScheduler, rateLimiterService) {
       updatedAt: new Date(),
     });
 
-    await jobScheduler.schedule({
+    await jobScheduler.publish({
       callLogId,
       ...payload,
     });
@@ -87,9 +88,30 @@ function signCaller(apiCallLogRepository, jobScheduler, rateLimiterService) {
   }
 
   async function returnAccptedAndSchedulRetry(id, payload, reply) {
-    reply.status(StatusCodes.ACCEPTED);
     await scheduleRetry(id, payload);
-    return ACCEPTED;
+    return reply.code(StatusCodes.ACCEPTED).send(ACCEPTED);
+  }
+
+  function isErrorRetriable(error) {
+    return retryErrorCodes.includes(error.statusCode);
+  }
+
+  function handleApiRequestError(id, payload, error, reply) {
+    logger.info(
+      `request with payload: ${JSON.stringify(
+        payload,
+        null,
+        2
+      )} failed with error: ${JSON.stringify(error, null, 2)}`
+    );
+    if (
+      error instanceof TimeoutError || // this is to handle axios timeouts
+      isErrorRetriable(error)
+    ) {
+      logger.info(`adding request with id: ${id} to queue to process later`);
+      return returnAccptedAndSchedulRetry(id, payload, reply);
+    }
+    throw error;
   }
 
   /**
@@ -100,7 +122,7 @@ function signCaller(apiCallLogRepository, jobScheduler, rateLimiterService) {
    */
   // eslint-disable-next-line consistent-return
   async function callSign(reply, payload) {
-    logger.info("received payload");
+    logger.info({ message: "received payload", payload });
     const { requestStatus, id, response, retryScheduled } =
       await apiCallLogRepository.getOrCreateCallLog(payload);
 
@@ -129,8 +151,7 @@ function signCaller(apiCallLogRepository, jobScheduler, rateLimiterService) {
         },
         `message: ${payload.message} is already scheduled`
       );
-      reply.status(StatusCodes.ACCEPTED);
-      return ACCEPTED;
+      return reply.code(StatusCodes.ACCEPTED).send(ACCEPTED);
     }
 
     try {
@@ -142,21 +163,7 @@ function signCaller(apiCallLogRepository, jobScheduler, rateLimiterService) {
       await handleSignSuccessResponse(id)(resp);
       return resp.data;
     } catch (error) {
-      logger.info(
-        `request with payload: ${JSON.stringify(
-          payload,
-          null,
-          2
-        )} failed with error: ${JSON.stringify(error, null, 2)}`
-      );
-      if (
-        error.code === "ECONNABORTED" || // this is to handle axios timeouts
-        retryErrorCodes.includes(error.response?.status) // check if the error is retriable
-      ) {
-        logger.info(`adding request with id: ${id} to queue to process later`);
-        return returnAccptedAndSchedulRetry(id, payload, reply);
-      }
-      return error;
+      await handleApiRequestError(id, payload, error, reply);
     }
   }
 
