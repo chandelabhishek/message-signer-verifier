@@ -9,20 +9,20 @@ const fastify = require("fastify")({
   logger,
 });
 
-const routeRegistrar = require("./route-registrar");
-const pluginRegistrar = require("./plugin-regitrar");
-const hookRegistrar = require("./hook-registrar");
+const registerRoutes = require("./route-registrar");
+const registerPlugins = require("./plugin-regitrar");
+const registerHooks = require("./hook-registrar");
 
 const server = async () => {
-  await pluginRegistrar(fastify);
-  routeRegistrar(fastify);
-  hookRegistrar(fastify);
+  await registerPlugins(fastify);
+  registerRoutes(fastify);
+  registerHooks(fastify);
 
   async function start(port, host) {
     await fastify.listen({ port, host });
   }
 
-  return { start };
+  return { start, fastify };
 };
 
 module.exports = server;

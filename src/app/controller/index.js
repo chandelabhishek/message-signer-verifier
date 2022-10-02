@@ -1,11 +1,17 @@
 const getCallerService = require("../service/sign-verify-caller");
-
+const bullMQJobScheduler = require("../service/publisher/job-scheduler");
+const ApiCallRepo = require("../repository/api-call-log");
+const getRateLimiter = require("../service/rate-limiter");
 /**
  *
  * @returns controller
  */
-function getController() {
-  const { callSign } = getCallerService();
+async function getController() {
+  const { callSign } = getCallerService(
+    ApiCallRepo,
+    bullMQJobScheduler,
+    await getRateLimiter()
+  );
 
   function signController(request, reply) {
     return callSign(reply, request.body);

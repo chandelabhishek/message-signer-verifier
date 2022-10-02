@@ -9,7 +9,7 @@ const webhookPublisher = getPublisher(
 );
 
 async function publish(payload) {
-  webhookPublisher.publish(payload);
+  await webhookPublisher.publish(payload);
 }
 
 module.exports = { publish };

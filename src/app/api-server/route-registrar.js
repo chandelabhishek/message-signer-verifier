@@ -1,20 +1,23 @@
 const getController = require("../controller");
 
 async function registerRoutes(fastify) {
-  const { signController } = getController();
+  const { signController } = await getController();
 
   fastify.addSchema({
     $id: "sign",
     type: "object",
+    additionalProperties: false,
     required: ["clientRequestId", "message"],
     properties: {
-      clientRequestId: { type: "string" },
+      clientRequestId: { type: "string", format: "uuid" },
       message: { type: "string" },
       webhookUrl: {
         type: "string",
+        format: "uri",
       },
       webhookHeaders: {
         type: "object",
+        maxProperties: 3,
         properties: {},
       },
     },

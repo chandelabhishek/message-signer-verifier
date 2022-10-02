@@ -3,8 +3,6 @@ const { SIGN_URL, RETRY_ERROR_CODES } = process.env;
 const { StatusCodes } = require("http-status-codes");
 const logger = require("../logger");
 const makeGetApiCall = require("./api-caller");
-const bullMQJobScheduler = require("./publisher/job-scheduler");
-const getApiCallLogRepository = require("../repository/api-call-log");
 
 const ACCEPTED = "ACCEPTED";
 
@@ -14,7 +12,7 @@ const ACCEPTED = "ACCEPTED";
 const retryErrorCodes = RETRY_ERROR_CODES.split(",").map((el) =>
   parseInt(el.trim(), 10)
 );
-const rateLimiter = require("./rate-limiter");
+
 const TimeoutError = require("../exception/timeout-error");
 
 /**
@@ -26,6 +24,7 @@ const TimeoutError = require("../exception/timeout-error");
  */
 
 function signCaller(apiCallLogRepository, jobScheduler, rateLimiterService) {
+  // console.log(apiCallLogRepository, jobScheduler, rateLimiterService);
   /**
    *
    * @param {*} callLogId
@@ -96,7 +95,7 @@ function signCaller(apiCallLogRepository, jobScheduler, rateLimiterService) {
     return retryErrorCodes.includes(error.statusCode);
   }
 
-  function handleApiRequestError(id, payload, error, reply) {
+  async function handleApiRequestError(id, payload, error, reply) {
     logger.info(
       `request with payload: ${JSON.stringify(
         payload,
@@ -163,7 +162,7 @@ function signCaller(apiCallLogRepository, jobScheduler, rateLimiterService) {
       await handleSignSuccessResponse(id)(resp);
       return resp.data;
     } catch (error) {
-      await handleApiRequestError(id, payload, error, reply);
+      return await handleApiRequestError(id, payload, error, reply);
     }
   }
 
@@ -174,12 +173,4 @@ function signCaller(apiCallLogRepository, jobScheduler, rateLimiterService) {
   return { callSign, makeSignCall, handleSignSuccessResponse };
 }
 
-/**
- * Prepare the signCallerService
- * @returns signCallerService
- */
-function getSignCaller() {
-  return signCaller(getApiCallLogRepository(), bullMQJobScheduler, rateLimiter);
-}
-
-module.exports = getSignCaller;
+module.exports = signCaller;
