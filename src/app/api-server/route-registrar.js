@@ -18,7 +18,6 @@ async function registerRoutes(fastify) {
       webhookHeaders: {
         type: "object",
         maxProperties: 3,
-        properties: {},
       },
     },
   });
