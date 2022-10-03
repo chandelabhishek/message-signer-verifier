@@ -10,12 +10,12 @@ module.exports = function setupShutDownHandlers(fastify) {
   process.on("exit", () => cleanupResorces());
   process.on("SIGINT", () => cleanupResorces());
   process.on("uncaughtException", (err) => {
-    logger.error(
-      "[UNCAUGHT_EXCEPTION]",
-      `${new Date().toUTCString()}: Process will now exit. UncaughtException:`,
-      err.message,
-      err.stack
-    );
+    logger.error({
+      code: "[UNCAUGHT_EXCEPTION]",
+      message: `${new Date().toUTCString()}: Process will now exit. UncaughtException:`,
+      errorMessage: err.message,
+      stackTrace: err.stack,
+    });
     cleanupResorces();
   });
 };

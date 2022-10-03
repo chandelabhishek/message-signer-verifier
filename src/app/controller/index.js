@@ -8,7 +8,7 @@ const getRateLimiter = require("../service/rate-limiter");
  */
 async function getController() {
   const { callSign } = getCallerService(
-    ApiCallRepo,
+    ApiCallRepo(),
     bullMQJobScheduler,
     await getRateLimiter()
   );

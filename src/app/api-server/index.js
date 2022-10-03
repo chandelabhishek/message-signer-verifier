@@ -15,7 +15,7 @@ const registerHooks = require("./hook-registrar");
 
 const server = async () => {
   await registerPlugins(fastify);
-  registerRoutes(fastify);
+  await registerRoutes(fastify);
   registerHooks(fastify);
 
   async function start(port, host) {
