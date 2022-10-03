@@ -13,8 +13,10 @@ const webhookPublisher = require("../service/publisher/webhook-publisher");
 const { JOB_QUEUE_NAME } = require("../constant");
 const getCallerService = require("../service/sign-verify-caller");
 const registerWorker = require("./worker");
+const bullMQJobScheduler = require("../service/publisher/job-scheduler");
+const ApiCallRepository = require("../repository/api-call-log");
+const getRateLimiter = require("../service/rate-limiter");
 
-const apiCallerService = getCallerService();
 const ACCEPTED = "ACCEPTED";
 
 /**
@@ -23,7 +25,13 @@ const ACCEPTED = "ACCEPTED";
  *
  * Performs the scheduled job
  */
-async function callSignApi(job) {
+const callSignApi = (ApiCallRepo, JobScheduler, RateLimiter) => async (job) => {
+  const apiCallerService = getCallerService(
+    ApiCallRepo(),
+    JobScheduler,
+    await RateLimiter()
+  );
+
   const { payload } = job.data;
 
   // call syhthesia api, set longer timeouts because it need not return response in 2sec
@@ -52,6 +60,11 @@ async function callSignApi(job) {
     ...payload,
     apiResponse: response.data,
   });
-}
+};
 
-registerWorker(JOB_QUEUE_NAME, callSignApi);
+registerWorker(
+  JOB_QUEUE_NAME,
+  callSignApi(ApiCallRepository, bullMQJobScheduler, getRateLimiter)
+);
+// exporting so that it can be test
+module.exports = callSignApi;

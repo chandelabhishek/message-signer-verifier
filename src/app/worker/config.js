@@ -35,7 +35,7 @@ module.exports = {
     port: REDIS_PORT,
   },
   jobQueueConfig: {
-    // generating random initial delay so that all the queued don't get retried at the same time
+    // generating random initial delay so that all the queued jobs don't get retried at the same time
     delay: generateRandomInteger(1, 10) * parseInt(REDIS_JOB_INITIAL_DELAY, 10),
     ...jobQueueRetryConfig,
   },

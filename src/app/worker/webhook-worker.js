@@ -35,6 +35,7 @@ async function callWebhook(job) {
   });
 
   logger.info("response from synthesia api", status);
+  console.log(WebhookResponseUpdaterService.updateWebhookResponse);
   // update the db with webhook response
   await WebhookResponseUpdaterService.updateWebhookResponse({
     apiCallLogId: payload.callLogId,
@@ -44,3 +45,4 @@ async function callWebhook(job) {
 }
 
 registerWorker(WEBHOOK_QUEUE_NAME, callWebhook);
+module.exports = callWebhook;
